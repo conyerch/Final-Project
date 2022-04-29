@@ -83,11 +83,7 @@ let rec translateTerm fenv lenv term : W.instr list =
     match decl with
     | ValBind { bv; defn } -> (
         let lenv = Freshenv.add1 (bv.id) lenv in
-        let inst1 = translateFactor fenv lenv defn in
-        let inst2 = W.LocalSet (Freshenv.find bv.id lenv) :: [] in
-        let inst3 = translateTerm fenv lenv body in
-        let inst4 = inst1 @ inst2 in
-        inst4 @ inst3)
+        translateFactor fenv lenv defn @ (W.LocalSet (Freshenv.find bv.id lenv) :: []) @ translateTerm fenv lenv body)
 
 (* HINT: the case for Block should help you with Ast3.Let in translateTerm if you are struggling *)
 let rec translateStatement fenv lenv stmt : W.instr list =
@@ -102,16 +98,13 @@ let rec translateStatement fenv lenv stmt : W.instr list =
     translateTerm fenv lenv term @ [W.Call Int32.zero]
   (* FILL IN THE REMAINING CASES *)
   | Assign { id; expr } -> (
-    let inst1 = translateTerm fenv lenv expr in
-    let inst2 = W.LocalSet (Freshenv.find id lenv) :: [] in
-    inst1 @ inst2)
+    (translateTerm fenv lenv expr) @ (W.LocalSet (Freshenv.find id lenv) :: []))
   | While { expr; statement } -> (
     let inst1 = translateTerm fenv lenv expr in
-    let inst2 = translateStatement fenv lenv statement in
-    let inst2' = inst2 @ inst1 in
-    let inst4 = W.Loop (inst2' @ (W.BrIf (Int32.zero) :: []) ) in
-    let inst3 = W.If (inst4 :: [],  (Nop :: [])) :: [] in
-    inst1 @ inst3)
+    let inst2 = (translateStatement fenv lenv statement) @ inst1 in
+    let inst3 = W.Loop (inst2 @ (W.BrIf (Int32.zero) :: []) ) in
+    let inst4 = W.If (inst3 :: [],  (Nop :: [])) :: [] in
+    inst1 @ inst4)
 
   | IfS { expr; thn; els } ->
     (translateTerm fenv lenv expr) @ (W.If (translateStatement fenv lenv thn, translateStatement fenv lenv els) :: [])
@@ -122,11 +115,9 @@ let rec translateStatement fenv lenv stmt : W.instr list =
       |[] -> []
       |x :: xs -> (translateTerm fenv lenv x) @ (getinst xs)
     in
-    List.append (getinst rands) (funCodeGen fenv rator)
+    (getinst rands) @ (funCodeGen fenv rator)
   | Return term ->
     ((translateTerm fenv lenv term) @ (W.Return :: []))
-
-
 
 (* ********************************** *)
 (* NO CHANGES NEEDED BELOW THIS POINT *)
