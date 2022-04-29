@@ -66,7 +66,7 @@ let funCodeGen d (id: Symbol.t) : W.instr list =
 let translateFactor (fenv : int32 Env.t) (lenv : Freshenv.t) (fact : Ast3.factor) : W.instr list =
   match fact with
   | Id s -> W.LocalGet (Freshenv.find s lenv) :: []
-  | Literal { typ =_ ; bits } ->
+  | Literal { typ = _ ; bits } ->
         let newval = (Int32.of_int bits) in
         W.Const (I32 newval) :: []
   | App { rator ; rands } ->
@@ -75,8 +75,7 @@ let translateFactor (fenv : int32 Env.t) (lenv : Freshenv.t) (fact : Ast3.factor
       |[] -> []
       |x :: xs -> W.LocalGet (Freshenv.find x lenv) :: getinst xs
     in
-    let instrlist = getinst rands in
-    List.append instrlist (funCodeGen fenv rator)
+    List.append (getinst rands) (funCodeGen fenv rator)
 
 (* HINT: in the Let case, use the function Freshenv.add1 to add the bound variable to lenv. This
    will associate fresh WASM local variable number with that symbol name *)
