@@ -1,7 +1,4 @@
-
-
 module W = Astwasm
-
 
 let getProcedureType (p: Ast3.procedure) : W.func_type =
   let Ast3.Procedure {id=_; formals; typ; body=_} = p in
@@ -44,7 +41,7 @@ let dynamicBasis = Env.make operatorInstructions
 (* Given a rator (an id for an operation/function), this returns a list of
    instructions to compute that operation: if the operation is a primitive operation,
    we use the instructions given above, otherwise the operation ought to be a function call.
-   We look up its ID in the Env d, and return a Call instruction
+   We look up its ID in the Env d, and return a Call instruction 
 
    HINT: you will want to use this in your code for `App` and `Call` *)
 let funCodeGen d (id: Symbol.t) : W.instr list =
@@ -56,7 +53,7 @@ let funCodeGen d (id: Symbol.t) : W.instr list =
         [W.Call (Env.find id d)]
       with Not_found -> failwith "bad function symbol"))
 
-(*
+(* 
    HINT: for translateFactor
    - fenv is an Env that matches function symbol names to the number of the function in the WASM module.
      Use with funCodeGen
@@ -90,8 +87,7 @@ let rec translateTerm fenv lenv term : W.instr list =
         let inst2 = W.LocalSet (Freshenv.find bv.id lenv) :: [] in
         let inst3 = translateTerm fenv lenv body in
         let inst4 = List.append inst1 inst2 in
-        let inst5 = List.append inst4 inst3 in
-        inst5 )
+        List.append inst4 inst3)
 
 (* HINT: the case for Block should help you with Ast3.Let in translateTerm if you are struggling *)
 let rec translateStatement fenv lenv stmt : W.instr list =
@@ -115,7 +111,7 @@ let rec translateStatement fenv lenv stmt : W.instr list =
     let inst2' = List.append inst2 inst1 in
     let inst4 = W.Loop (List.append inst2' (W.BrIf (Int32.zero) :: []) ) in
     let inst3 = W.If (inst4 :: [],  (Nop :: [])) :: [] in
-    List.append inst1 inst3  )
+    List.append inst1 inst3 )
 
   | IfS { expr ; thn ; els} ->
     List.append (translateTerm fenv lenv expr) (W.If (translateStatement fenv lenv thn, translateStatement fenv lenv els) :: [])
@@ -126,10 +122,10 @@ let rec translateStatement fenv lenv stmt : W.instr list =
       |[] -> []
       |x :: xs -> List.append (translateTerm fenv lenv x) (getinst xs)
     in
-    let instrlist = (getinst rands) in
-    List.append instrlist (funCodeGen fenv rator)
+    List.append (getinst rands) (funCodeGen fenv rator)
   | Return term ->
     (List.append (translateTerm fenv lenv term) (W.Return :: []))
+
 
 
 (* ********************************** *)
@@ -151,7 +147,7 @@ let translateProcedure fenv p =
     let lenv = Freshenv.extend (List.map (fun x -> x.Symbol.id) formals) Freshenv.empty in
     let code = translateStatement fenv lenv body in
     { W.ftype = Env.find id fenv;
-      W.locals = W.locals_types formals code;
+      W.locals = W.locals_types formals code; 
       W.body = code @ epilogue }
 
 (* To finish translating the program, we translate each procedure and build up a module
@@ -159,7 +155,7 @@ let translateProcedure fenv p =
    list their type, as well as import the externally supplied print function *)
 let translate (Ast3.Program procedures)  =
   let tys = List.map (getProcedureType) procedures in
-  let fenv = makeFuncDict procedures in
+  let fenv = makeFuncDict procedures in 
   let _ = funCodeGen in
   let mainname = List.map Char.code (Lib.explode "main") in
   { W.types = FuncType ([W.I32Type], []) :: tys;

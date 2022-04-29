@@ -1,0 +1,101 @@
+mc: 15:31 4.29.2022. Compiling test/a.mc in debug mode.
+
+The input program is:
+
+int f(int a)
+{
+  int b;
+  b = +(2, *(a, 8));
+  return
+    b
+}
+int main()
+{
+  print f(5);
+  print f(6);
+  print f(7);
+  print f(8);
+  return
+    0
+}
+
+Type environment is:
+% : int * int -> int
+* : int * int -> int
+** : int * int -> int
++ : int * int -> int
+- : int * int -> int
+/ : int * int -> int
+< : int * int -> bool
+<= : int * int -> bool
+<> : int * int -> bool
+== : int * int -> bool
+> : int * int -> bool
+>= : int * int -> bool
+and : bool * bool -> bool
+f : int -> int
+main :  -> int
+not : bool -> bool
+or : bool * bool -> bool
+
+The program is well-typed.
+
+
+After the naming phase:
+
+int f(int a)
+{
+  int b;
+  b =   let 
+      x0 : int = 2
+      x1 : int =
+        let 
+            x3 : int = a
+            x4 : int = 8
+            x5 : int = *(x3, x4)
+        in
+          x5
+      x2 : int = +(x0, x1)
+  in
+    x2
+  ;
+  return
+    b
+}
+int main()
+{
+  print let x6 : int = 5 in let x7 : int = f(x6) in x7;
+  print let x8 : int = 6 in let x9 : int = f(x8) in x9;
+  print let x10 : int = 7 in let x11 : int = f(x10) in x11;
+  print let x12 : int = 8 in let x13 : int = f(x12) in x13;
+  return
+    0
+}
+
+After the lifting phase:
+
+int f(int a)
+{
+  int b;
+  b =   let 
+      x0 : int = 2
+      x3 : int = a
+      x4 : int = 8
+      x5 : int = *(x3, x4)
+      x1 : int = x5
+      x2 : int = +(x0, x1)
+  in
+    x2
+  ;
+  return
+    b
+}
+int main()
+{
+  print let x6 : int = 5 in let x7 : int = f(x6) in x7;
+  print let x8 : int = 6 in let x9 : int = f(x8) in x9;
+  print let x10 : int = 7 in let x11 : int = f(x10) in x11;
+  print let x12 : int = 8 in let x13 : int = f(x12) in x13;
+  return
+    0
+}
