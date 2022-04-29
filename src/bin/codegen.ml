@@ -63,68 +63,68 @@ let funCodeGen d (id: Symbol.t) : W.instr list =
 let translateFactor (fenv : int32 Env.t) (lenv : Freshenv.t) (fact : Ast3.factor) : W.instr list =
   match fact with
   | Id s -> W.LocalGet (Freshenv.find s lenv) :: []
-  | Literal { typ = _ ; bits } ->
+  | Literal { typ = _; bits } ->
         let newval = (Int32.of_int bits) in
         W.Const (I32 newval) :: []
-  | App { rator ; rands } ->
+  | App { rator; rands } ->
     let rec getinst rands =
       match rands with
       |[] -> []
       |x :: xs -> W.LocalGet (Freshenv.find x lenv) :: getinst xs
     in
-    List.append (getinst rands) (funCodeGen fenv rator)
+    (getinst rands) @ (funCodeGen fenv rator)
 
 (* HINT: in the Let case, use the function Freshenv.add1 to add the bound variable to lenv. This
    will associate fresh WASM local variable number with that symbol name *)
 let rec translateTerm fenv lenv term : W.instr list =
   match term with
   | Ast3.Factor f -> translateFactor fenv lenv f
-  | Ast3.Let {decl; body} ->
+  | Ast3.Let { decl; body } ->
     match decl with
-    |ValBind {bv; defn} -> (
+    | ValBind { bv; defn } -> (
         let lenv = Freshenv.add1 (bv.id) lenv in
         let inst1 = translateFactor fenv lenv defn in
         let inst2 = W.LocalSet (Freshenv.find bv.id lenv) :: [] in
         let inst3 = translateTerm fenv lenv body in
-        let inst4 = List.append inst1 inst2 in
-        List.append inst4 inst3)
+        let inst4 = inst1 @ inst2 in
+        inst4 @ inst3)
 
 (* HINT: the case for Block should help you with Ast3.Let in translateTerm if you are struggling *)
 let rec translateStatement fenv lenv stmt : W.instr list =
   match stmt with
-  | Ast3.Block {decls; statements} ->
-    let lenv = Freshenv.extend (List.map (fun x -> x.Symbol.id) decls) lenv in
-    List.concat (List.map (translateStatement fenv lenv) statements)
+  | Ast3.Block { decls; statements } ->
+      let lenv = Freshenv.extend (List.map (fun x -> x.Symbol.id) decls) lenv in
+      List.concat (List.map (translateStatement fenv lenv) statements)
   | Ast3.Print term ->
     (* We import a special Print function to our WASM module which is assigned the number 0,
        so to print a term, we generate code to execute the term and store the result on the stack,
        then call the print function  *)
     translateTerm fenv lenv term @ [W.Call Int32.zero]
   (* FILL IN THE REMAINING CASES *)
-  | Assign { id ; expr } ->
+  | Assign { id; expr } -> (
     let inst1 = translateTerm fenv lenv expr in
     let inst2 = W.LocalSet (Freshenv.find id lenv) :: [] in
-    (List.append inst1 inst2)
+    inst1 @ inst2)
   | While { expr; statement } -> (
     let inst1 = translateTerm fenv lenv expr in
     let inst2 = translateStatement fenv lenv statement in
-    let inst2' = List.append inst2 inst1 in
-    let inst4 = W.Loop (List.append inst2' (W.BrIf (Int32.zero) :: []) ) in
+    let inst2' = inst2 @ inst1 in
+    let inst4 = W.Loop (inst2' @ (W.BrIf (Int32.zero) :: []) ) in
     let inst3 = W.If (inst4 :: [],  (Nop :: [])) :: [] in
-    List.append inst1 inst3 )
+    inst1 @ inst3)
 
-  | IfS { expr ; thn ; els} ->
-    List.append (translateTerm fenv lenv expr) (W.If (translateStatement fenv lenv thn, translateStatement fenv lenv els) :: [])
+  | IfS { expr; thn; els } ->
+    (translateTerm fenv lenv expr) @ (W.If (translateStatement fenv lenv thn, translateStatement fenv lenv els) :: [])
 
-  | Call { rator; rands} ->
+  | Call { rator; rands } ->
     let rec getinst rands =
       match rands with
       |[] -> []
-      |x :: xs -> List.append (translateTerm fenv lenv x) (getinst xs)
+      |x :: xs -> (translateTerm fenv lenv x) @ (getinst xs)
     in
     List.append (getinst rands) (funCodeGen fenv rator)
   | Return term ->
-    (List.append (translateTerm fenv lenv term) (W.Return :: []))
+    ((translateTerm fenv lenv term) @ (W.Return :: []))
 
 
 
