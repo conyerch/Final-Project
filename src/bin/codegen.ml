@@ -64,8 +64,7 @@ let translateFactor (fenv : int32 Env.t) (lenv : Freshenv.t) (fact : Ast3.factor
   match fact with
   | Id s -> W.LocalGet (Freshenv.find s lenv) :: []
   | Literal { typ = _; bits } ->
-        let newval = (Int32.of_int bits) in
-        W.Const (I32 newval) :: []
+      W.Const (I32 (Int32.of_int bits)) :: []
   | App { rator; rands } ->
     let rec getinst rands =
       match rands with
