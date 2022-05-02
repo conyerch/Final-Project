@@ -109,12 +109,7 @@ let rec translateStatement fenv lenv stmt : W.instr list =
     (translateTerm fenv lenv expr) @ (W.If (translateStatement fenv lenv thn, translateStatement fenv lenv els) :: [])
 
   | Call { rator; rands } ->
-    let rec getinst rands =
-      match rands with
-      |[] -> []
-      |x :: xs -> (translateTerm fenv lenv x) @ (getinst xs)
-    in
-    (getinst rands) @ (funCodeGen fenv rator)
+    List.concat (List.map (translateTerm fenv lenv) rands) @ (funCodeGen fenv rator)
   | Return term ->
     ((translateTerm fenv lenv term) @ (W.Return :: []))
 
